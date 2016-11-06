@@ -1,15 +1,66 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import { Provider } from 'react-redux';
-import { createStore, applyMiddleware } from 'redux';
+import _ from 'lodash'
+import React, { Component } from 'react'
+import ReactDOM from 'react-dom'
+import YoutubeSearch from 'youtube-api-search'
 
-import App from './components/app';
-import reducers from './reducers';
+import SearchBar from './components/search-bar'
+import VideoDetail from './components/video-detail'
+import VideoList from './components/video-list'
 
-const createStoreWithMiddleware = applyMiddleware()(createStore);
+const API_KEY = 'AIzaSyCCyWpjXVEgTRnA9RYAzJYR_rM0_r14tp8'
 
-ReactDOM.render(
-  <Provider store={createStoreWithMiddleware(reducers)}>
-    <App />
-  </Provider>
-  , document.querySelector('.container'));
+class App extends Component {
+  constructor(props) {
+    super(props)
+
+    this.state = {
+      videos: [],
+      selectedVideo: null,
+      term: null
+    }
+
+    this.searchVideos('school of life')
+  }
+
+  searchVideos(term) {
+    YoutubeSearch({key: API_KEY, term: term}, (videos) => {
+      this.setState({
+        videos: videos,
+        selectedVideo: videos[0]
+      })
+    })
+  }
+
+  render() {
+    const searchVideos = _.debounce((term) => { this.searchVideos(term) }, 300)
+
+    return (
+      <div>
+        <br />
+        <br />
+        <div className='row'>
+          <div className='col-sm-12'>
+            <SearchBar
+              onSearch={term => this.searchVideos(term)}
+            />
+          </div>
+        </div>
+        <div className='row'>
+          <div className='col-md-7'>
+            <VideoDetail video={this.state.selectedVideo} />
+          </div>
+          <div className='col-md-5'>
+            <VideoList
+              onVideoSelect={selectedVideo => this.setState({selectedVideo})}
+              videos={this.state.videos}
+            />
+          </div>
+        </div>
+        <br />
+        <br />
+      </div>
+    )
+  }
+}
+
+ReactDOM.render(<App />, document.querySelector('.container'))
